@@ -2,18 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-data_file = r'D:/AstrophysicsMasterULL/Solar/model_jcd.dat'
+data_file_PC = r'D:/AstrophysicsMasterULL/Solar/model_jcd.dat'
+data_file_port = r'C:\Users\guill\Desktop\Practica1Solar\model_jcd.dat'
 
-f = open(data_file, 'r')
+f = open(data_file_port, 'r')
 lines = f.readlines()
-vars = lines[0]
+var_names = lines[0]
 n_lines = len(lines)
 height, p, rho, te = map(np.zeros, [n_lines-1] * 4)
 for i in range(n_lines-1):
     data = lines[1:][i].split()
     height[i], p[i], rho[i], te[i] = data
 
-height = height
 f.close()
 
 gamma = 5/3
@@ -45,25 +45,26 @@ def dzds(kx, kz):
     return 1.0*cs**2*kz*(cs**2*(kx**2 + kz**2) + omega_c**2)/ \
            np.sqrt(-4*N**2*cs**2*kx**2 + (cs**2*(kx**2 + kz**2) + omega_c**2)**2) + cs**2*kz
 
-def System(kz, kx, x, z, t):
+def System(kx, kz, x, z, t):
     index = np.argmin(np.abs(height-z))
-    return np.array([2.0 * N[index] * Nz[index] * cs[index]**2 * kx**2 / np.sqrt(-4 * N[index]**2 * cs[index]**2 * kx**2 + (cs[index]**2 * (kx**2 + kz**2) + omega_c[index]**2)**2) - \
+    return np.array([0,
+           2.0 * N[index] * Nz[index] * cs[index]**2 * kx**2 / np.sqrt(-4 * N[index]**2 * cs[index]**2 * kx**2 + (cs[index]**2 * (kx**2 + kz**2) + omega_c[index]**2)**2) - \
            csz[index] * (cs[index] * (kx**2 + kz**2) + 0.5 * (-4 * N[index]**2 * cs[index] * kx**2 + 2 * cs[index] * (kx**2 + kz**2) * (cs[index]**2 * (kx**2 + kz**2) + omega_c[index]**2))
            / np.sqrt(-4 * N[index]**2 * cs[index]**2 * kx**2 + (cs[index]**2 * (kx**2 + kz**2) + omega_c[index]**2)**2)) \
            - wcz[index] * (+1.0 * omega_c[index] * (cs[index]**2 * (kx**2 + kz**2) + omega_c[index]**2) /
            np.sqrt(-4 * N[index]**2 * cs[index]**2 * kx**2 + (cs[index]**2 * (kx**2 + kz**2) + omega_c[index]**2)**2) + omega_c[index]),
-           0,
            cs[index]**2*kx + 0.5*(-4*N[index]**2*cs[index]**2*kx + 2*cs[index]**2*kx*(cs[index]**2*(kx**2 + kz**2) + omega_c[index]**2))/ np.sqrt(-4*N[index]**2*cs[index]**2*kx**2 + (cs[index]**2*(kx**2 + kz**2) + omega_c[index]**2)**2),
            (1.0*cs[index]**2*kz*(cs[index]**2*(kx**2 + kz**2) + omega_c[index]**2) / np.sqrt(-4*N[index]**2*cs[index]**2*kx**2 + (cs[index]**2*(kx**2 + kz**2) + omega_c[index]**2)**2) + cs[index]**2*kz)])
+
 def rk4(f, initial, t0, tf, n):
-    t = np.linspace(t0, tf, n+1)
-    vars = np.zeros(shape=(4, n+1))
+    t = np.linspace(t0, tf, n)
+    vars = np.zeros(shape=(4, n))
     vars[0, 0] = initial[0]
     vars[1, 0] = initial[1]
     vars[2, 0] = initial[2]
     vars[3, 0] = initial[3]
     h = t[1]-t[0]
-    for i in range(1, n-1):
+    for i in range(1, n):
         k1 = h * f(*vars[:, i-1], t[i-1])
         k2 = h * f(*vars[:, i-1] + 0.5 * k1, t[i-1] + 0.5*h)
         k3 = h * f(*vars[:, i-1] + 0.5 * k2, t[i-1] + 0.5*h)
@@ -72,17 +73,35 @@ def rk4(f, initial, t0, tf, n):
     return vars, t
 
 #Initial conditions
-w = 2*np.pi*3*10**(-3)
-kz = w**2/cs**2 * (N**2/w**2 - 1) * (omega_c**2/w**2 - 1)
-reflection = np.argwhere(kz<0)[0][0]
-print(reflection)
-initial_conds = np.array([(w/cs[reflection]), 0, -5000, height[reflection]])
+w = 2*np.pi*10**(-3)*np.array([2, 3, 3.5, 5])
+z_ini_index = 200
+initial_conds = np.zeros(shape=(4,4))
+initial_conds[0,:] = np.array([(w[0]/cs[z_ini_index]), 0, 0, height[z_ini_index]])
+initial_conds[1,:] = np.array([(w[1]/cs[z_ini_index]), 0, 0, height[z_ini_index]])
+initial_conds[2,:] = np.array([(w[2]/cs[z_ini_index]), 0, 0, height[z_ini_index]])
+initial_conds[3,:] = np.array([(w[3]/cs[z_ini_index]), 0, 0, height[z_ini_index]])
 
-u, t = rk4(System, initial_conds, 0, 1, 10000)
+s2, t = rk4(System, initial_conds[0,:], 0, 2.5, 30000)
+s3, t = rk4(System, initial_conds[1,:], 0, 1, 30000)
+s3_5, t = rk4(System, initial_conds[2,:], 0, 1, 30000)
+s5, t = rk4(System, initial_conds[3,:], 0, 0.5, 30000)
 
 
 plt.figure()
-plt.plot(u[2, :-1000], u[3, :-1000])
+plt.plot(s2[2, :]/1000, s2[3, :], 'r--', label=r'$\nu = 2 mHz$')
+plt.axhline(np.max(s2[3, :]), color='r')
+plt.plot(s3[2, :]/1000, s3[3, :], 'c--', label=r'$\nu = 3 mHz$')
+plt.axhline(np.max(s3[3, :]), color='c')
+plt.plot(s3_5[2, :]/1000, s3_5[3, :], 'y--', label=r'$\nu = 3.5 mHz$')
+plt.axhline(np.max(s3_5[3, :]), color='y')
+plt.plot(s5[2, :]/1000, s5[3, :], 'k--', label=r'$\nu = 5 mHz$')
+plt.axhline(np.max(s5[3, :]), color='k')
+plt.ylim(height[z_ini_index]-250, height[0]+100)
+plt.xlim(0, 30)
+plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+                mode="expand", borderaxespad=0, ncol=2)
+plt.xlabel('X-direction [Mm]')
+plt.ylabel('Height [km]')
 plt.show()
 plt.close()
 
