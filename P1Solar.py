@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-data_file_PC = r'D:/AstrophysicsMasterULL/Solar/model_jcd.dat'
+data_file_pc = r'D:/AstrophysicsMasterULL/Solar/model_jcd.dat'
 data_file_port = r'C:\Users\guill\Desktop\Practica1Solar\model_jcd.dat'
 
-f = open(data_file_port, 'r')
+f = open(data_file_pc, 'r')
 lines = f.readlines()
 var_names = lines[0]
 n_lines = len(lines)
@@ -26,24 +26,6 @@ csz = np.gradient(cs, (height[1]-height[0]))
 wcz = np.gradient(omega_c, (height[1]-height[0]))
 Nz = np.gradient(N, (height[1]-height[0]))
 
-
-def dkzds(kx, kz, x, z):
-    return 2.0 * N * Nz * cs**2 * kx**2 / np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2) - \
-           csz * (cs * (kx**2 + kz**2) + 0.5 * (-4 * N**2 * cs * kx**2 + 2 * cs * (kx**2 + kz**2) * (cs**2 * (kx**2 + kz**2) + omega_c**2))
-           / np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2)) \
-           - wcz * (1.0 * omega_c * (cs**2 * (kx**2 + kz**2) + omega_c**2) /
-           np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2) + omega_c)
-
-def dkxds(kx, kz):
-    return 0
-
-def dxds(kx, kz):
-    return cs**2*kx + 0.5*(-4*N**2*cs**2*kx + 2*cs**2*kx*(cs**2*(kx**2 + kz**2) + omega_c**2))/ \
-           np.sqrt(-4*N**2*cs**2*kx**2 + (cs**2*(kx**2 + kz**2) + omega_c**2)**2)
-
-def dzds(kx, kz):
-    return 1.0*cs**2*kz*(cs**2*(kx**2 + kz**2) + omega_c**2)/ \
-           np.sqrt(-4*N**2*cs**2*kx**2 + (cs**2*(kx**2 + kz**2) + omega_c**2)**2) + cs**2*kz
 
 def System(kx, kz, x, z, t):
     index = np.argmin(np.abs(height-z))
@@ -87,7 +69,7 @@ s3_5, t = rk4(System, initial_conds[2,:], 0, 1, 30000)
 s5, t = rk4(System, initial_conds[3,:], 0, 0.5, 30000)
 
 
-plt.figure()
+plt.figure(1)
 plt.plot(s2[2, :]/1000, s2[3, :], 'r--', label=r'$\nu = 2 mHz$')
 plt.axhline(np.max(s2[3, :]), color='r')
 plt.plot(s3[2, :]/1000, s3[3, :], 'c--', label=r'$\nu = 3 mHz$')
@@ -105,11 +87,40 @@ plt.ylabel('Height [km]')
 plt.show()
 plt.close()
 
+# Part 2
+#Initial conditions
+w2_5 = 2*np.pi*10**(-3)*2.5
+z_ini_index2_5 = np.array([100,300,500,700])
+initial_conds2_5 = np.zeros(shape=(4,4))
+initial_conds2_5[0,:] = np.array([(w2_5/cs[z_ini_index2_5[0]]), 0, 0, height[z_ini_index2_5[0]]])
+initial_conds2_5[1,:] = np.array([(w2_5/cs[z_ini_index2_5[1]]), 0, 0, height[z_ini_index2_5[1]]])
+initial_conds2_5[2,:] = np.array([(w2_5/cs[z_ini_index2_5[2]]), 0, 0, height[z_ini_index2_5[2]]])
+initial_conds2_5[3,:] = np.array([(w2_5/cs[z_ini_index2_5[3]]), 0, 0, height[z_ini_index2_5[3]]])
+
+s2_5_100, t = rk4(System, initial_conds2_5[0,:], 0, 1, 30000)
+s2_5_300, t = rk4(System, initial_conds2_5[1,:], 0, 1, 30000)
+s2_5_500, t = rk4(System, initial_conds2_5[2,:], 0, 1, 30000)
+s2_5_700, t = rk4(System, initial_conds2_5[3,:], 0, 1, 30000)
 
 
-
-
-
+plt.figure(2)
+label0 = f'z_0 = {initial_conds2_5[0,:][-1]:.2E} km'
+plt.plot(s2_5_100[2, :]/1000, s2_5_100[3, :], 'r--', label=label0)
+label1 = f'z_0 = {initial_conds2_5[1,:][-1]:.2E} km'
+plt.plot(s2_5_300[2, :]/1000, s2_5_300[3, :], 'c--', label=label1)
+label2 = f'z_0 = {initial_conds2_5[2,:][-1]:.2E} km'
+plt.plot(s2_5_500[2, :]/1000, s2_5_500[3, :], 'y--', label=label2)
+label3 = f'z_0 = {initial_conds2_5[3,:][-1]:.2E} km'
+plt.plot(s2_5_700[2, :]/1000, s2_5_700[3, :], 'k--', label=label3)
+plt.axhline(np.max(s2_5_700[3, :]), color='k', label=r'$\omega_c$')
+plt.ylim(height[-1], height[0])
+plt.xlim(0, 25)
+plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+                mode="expand", borderaxespad=0, ncol=3)
+plt.xlabel('X-direction [Mm]')
+plt.ylabel('Height [km]')
+plt.show()
+plt.close()
 
 
 
@@ -154,6 +165,23 @@ print(dkz_ds)
 print(dx_ds)
 print(dz_ds)
 
+def dkzds(kx, kz, x, z):
+    return 2.0 * N * Nz * cs**2 * kx**2 / np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2) - \
+           csz * (cs * (kx**2 + kz**2) + 0.5 * (-4 * N**2 * cs * kx**2 + 2 * cs * (kx**2 + kz**2) * (cs**2 * (kx**2 + kz**2) + omega_c**2))
+           / np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2)) \
+           - wcz * (1.0 * omega_c * (cs**2 * (kx**2 + kz**2) + omega_c**2) /
+           np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2) + omega_c)
+
+def dkxds(kx, kz):
+    return 0
+
+def dxds(kx, kz):
+    return cs**2*kx + 0.5*(-4*N**2*cs**2*kx + 2*cs**2*kx*(cs**2*(kx**2 + kz**2) + omega_c**2))/ \
+           np.sqrt(-4*N**2*cs**2*kx**2 + (cs**2*(kx**2 + kz**2) + omega_c**2)**2)
+
+def dzds(kx, kz):
+    return 1.0*cs**2*kz*(cs**2*(kx**2 + kz**2) + omega_c**2)/ \
+           np.sqrt(-4*N**2*cs**2*kx**2 + (cs**2*(kx**2 + kz**2) + omega_c**2)**2) + cs**2*kz
 
 def System(kx, kz, x, z, t):
     return np.array([2.0 * N * Nz * cs**2 * kx**2 / np.sqrt(-4 * N**2 * cs**2 * kx**2 + (cs**2 * (kx**2 + kz**2) + omega_c**2)**2) - \
